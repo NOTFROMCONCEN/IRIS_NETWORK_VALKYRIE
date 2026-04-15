@@ -1,0 +1,24 @@
+# 设置默认行为，自动处理行结束符
+* text=auto
+
+# 明确指定文本文件
+*.py text
+*.md text
+*.yaml text
+*.yml text
+*.conf text
+*.txt text
+*.json text
+*.html text
+*.css text
+*.js text
+
+# 指定二进制文件
+*.xlsx binary
+*.xls binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
