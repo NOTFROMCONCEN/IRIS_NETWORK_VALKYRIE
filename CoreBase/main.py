@@ -44,136 +44,121 @@ def parse_arguments():
         参数对象
     """
     parser = argparse.ArgumentParser(
+        prog="main.py",
         description="""
-网络设备巡检工具 v3.0.0 - 简化优化版
-=====================================
+网络设备巡检工具 v3.0.0
 
-这是一个用于自动巡检网络设备的命令行工具，支持多种厂商设备，
-包括华为、H3C、锐捷、迈普和龙马防火墙等。
-
-功能特性:
-* 自动连接设备并执行巡检命令
-* 支持多种网络设备厂商
-* 日志收集模式和标准巡检模式
-* 结果自动保存为Excel和HTML格式
-* 设备认证信息安全管理
-* 详细的执行日志和错误报告
+用于批量巡检网络设备，支持华为、H3C、锐捷、迈普、龙马防火墙等厂商。
+支持标准巡检与日志收集两种模式，并提供设备分组过滤和模拟运行。
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-示例用法:
-  %(prog)s                              # 运行所有设备巡检
-  %(prog)s --vendor ruijie              # 只处理锐捷设备
-  %(prog)s --ip 192.168.1.1             # 只处理指定IP设备
-  %(prog)s --logmode                    # 日志收集模式
-  %(prog)s --version                    # 显示版本信息
-  %(prog)s --list-vendors               # 列出所有支持的厂商
-  %(prog)s --dry-run                    # 模拟运行，不实际连接
-  %(prog)s --output-dir /tmp/results    # 指定输出目录
-  %(prog)s --config custom.yaml         # 使用自定义配置文件
-  %(prog)s --ui                         # 启动设备管理Web界面
+常用示例:
+  python main.py
+      处理全部设备（标准巡检模式）
 
-支持的厂商:
-  huawei         - 华为设备
-  h3c            - H3C(华三)设备
-  ruijie         - 锐捷设备
-  ruijie_xialian - 锐捷下级设备
-  maipu          - 迈普设备
-  wst            - 龙马防火墙
+  python main.py --vendor huawei --group 核心
+      只处理华为厂商且属于“核心”分组的设备
 
-配置文件:
-  devices/devices.xlsx    - 设备配置文件
-  config/config.yaml      - 主配置文件
-  config/password.conf    - 密码配置文件
+  python main.py --ip 192.168.1.1 --logmode
+      只对指定 IP 执行日志收集
 
-输出目录:
-  output/results/         - 巡检结果
-  output/logs/           - 执行日志
+  python main.py --dry-run --vendor ruijie
+      预览将被处理的设备，不实际连接
 
-返回码说明:
-  0     - 全部设备巡检成功
-  1     - 全部设备巡检失败或程序错误
-  2     - 部分设备巡检成功
-  130   - 用户中断操作
+  python main.py --ui
+      启动设备管理 Web 界面
 
-更多信息请参考项目文档。
+支持厂商关键字:
+  huawei, h3c, ruijie, ruijie_xialian, maipu, wst
+
+路径说明（以 CoreBase 为工作目录）:
+  devices/devices.xlsx    设备清单
+  config/config.yaml      主配置
+  config/password.conf    密码配置
+  output/results/         巡检结果
+  output/logs/            执行日志
+
+返回码:
+  0   全部成功
+  1   全部失败或程序异常
+  2   部分成功
+  130 用户中断
         """,
     )
 
-    parser.add_argument(
+    target_group = parser.add_argument_group("目标筛选参数")
+    mode_group = parser.add_argument_group("执行模式参数")
+    io_group = parser.add_argument_group("配置与输出参数")
+    info_group = parser.add_argument_group("信息与辅助参数")
+
+    target_group.add_argument(
         "--vendor",
         type=str,
-        help="指定厂商过滤设备 (huawei, h3c, ruijie, ruijie_xialian, maipu, wst)\n"
-        "示例: --vendor huawei 或 --vendor ruijie",
+        help="按厂商过滤设备：huawei/h3c/ruijie/ruijie_xialian/maipu/wst",
     )
 
-    parser.add_argument(
+    target_group.add_argument(
         "--ip",
         type=str,
-        help="指定单个设备IP地址，只巡检该设备\n" "示例: --ip 192.168.1.1",
+        help="按单个设备 IP 过滤，只处理该设备",
     )
 
-    parser.add_argument(
-        "--logmode",
-        action="store_true",
-        help="日志收集模式：只执行日志相关命令，不执行完整巡检\n"
-        "适用于只需要收集设备日志的场景",
-    )
-
-    parser.add_argument(
-        "--version", action="store_true", help="显示程序版本信息和特性概览"
-    )
-
-    parser.add_argument(
-        "--list-vendors", action="store_true", help="列出所有支持的设备厂商及其详细信息"
-    )
-
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="模拟运行模式：显示将要执行的设备列表，但不实际连接设备\n"
-        "用于验证配置和过滤条件是否正确",
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        type=str,
-        help="指定结果输出目录（默认为 output/results）\n"
-        "示例: --output-dir /path/to/custom/output",
-    )
-
-    parser.add_argument(
-        "--config",
-        type=str,
-        help="指定自定义配置文件路径（默认为 config/config.yaml）\n"
-        "示例: --config /path/to/custom/config.yaml",
-    )
-
-    parser.add_argument(
-        "--ui",
-        action="store_true",
-        help="启动设备管理Web界面\n"
-        "提供设备列表的增删改查功能，通过浏览器访问",
-    )
-
-    parser.add_argument(
+    target_group.add_argument(
         "--group",
         type=str,
-        help="按设备分组过滤（设备名格式：分组名_设备名、[分组名]设备名、分组名-设备名）\n"
-        "示例: --group 核心",
+        help="按分组过滤（支持：分组名_设备名、[分组名]设备名、分组名-设备名）",
     )
 
-    parser.add_argument(
+    mode_group.add_argument(
+        "--logmode",
+        action="store_true",
+        help="日志收集模式：只执行日志相关命令，不执行完整巡检",
+    )
+
+    mode_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="模拟运行：展示将要处理的设备，不实际连接",
+    )
+
+    mode_group.add_argument(
+        "--ui",
+        action="store_true",
+        help="启动设备管理 Web 界面（Streamlit）",
+    )
+
+    mode_group.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="自动确认所有交互提示（适合自动化或 Web 场景）",
+    )
+
+    io_group.add_argument(
+        "--config",
+        type=str,
+        help="自定义配置文件路径（默认：config/config.yaml）",
+    )
+
+    io_group.add_argument(
+        "--output-dir",
+        type=str,
+        help="自定义结果输出目录（默认：output/results）",
+    )
+
+    info_group.add_argument(
+        "--list-vendors", action="store_true", help="列出所有支持厂商"
+    )
+
+    info_group.add_argument(
         "--list-groups",
         action="store_true",
-        help="列出所有设备分组",
+        help="列出设备清单中的所有分组",
     )
 
-    parser.add_argument(
-        "--yes", "-y",
-        action="store_true",
-        help="自动确认所有提示，无需手动输入\n"
-        "适用于Web模式或自动化脚本场景",
+    info_group.add_argument(
+        "--version", action="store_true", help="显示版本信息与能力概览"
     )
 
     return parser.parse_args()
@@ -271,7 +256,7 @@ def main():
         for error in errors:
             print(f"  - {error}")
         return 1
-    
+
     if warnings:
         print("\n[警告] 配置文件存在警告:")
         for warning in warnings:
@@ -284,7 +269,7 @@ def main():
 
     # 初始化通知器
     init_notifier(enabled=True)
-    
+
     # 显示横幅
     print_banner(config)
 
@@ -294,6 +279,7 @@ def main():
             print("[信息] 启动设备管理UI界面...")
             # 导入UI模块
             from ui import start_ui
+
             return start_ui()
         except ImportError as e:
             print(f"[错误] 无法导入UI模块: {e}")
@@ -310,7 +296,7 @@ def main():
             config["output"] = {}
         config["output"]["results_dir"] = args.output_dir
     create_output_dirs(config)
-    
+
     # 检查磁盘空间
     required_space = config.get("system", {}).get("disk_space_check_mb", 100)
     has_space, free_mb, error_msg = check_disk_space(required_space)
@@ -322,15 +308,15 @@ def main():
 
     # 初始化设备引擎
     engine = DeviceEngine(config)
-    
+
     # 定义Excel文件路径
     excel_file = "devices/devices.xlsx"
-    
+
     # 列出支持的厂商
     if args.list_vendors:
         list_vendors(engine)
         return 0
-    
+
     # 列出设备分组
     if args.list_groups:
         devices = load_devices(excel_file)
@@ -390,7 +376,7 @@ def main():
         vendor=args.vendor,
         ip=args.ip,
     )
-    
+
     # 按分组过滤
     if hasattr(args, "group") and args.group:
         filtered_devices = filter_devices_by_group(filtered_devices, args.group)
@@ -415,17 +401,19 @@ def main():
 
     # 预检查连通性
     reachable_devices = engine.pre_check_connectivity(filtered_devices)
-    
+
     if len(reachable_devices) == 0:
         print("[错误] 所有设备均无法连接，终止执行")
         return 1
-        
+
     if len(reachable_devices) < len(filtered_devices):
-        print(f"\n[警告] 有 {len(filtered_devices) - len(reachable_devices)} 台设备无法连接")
+        print(
+            f"\n[警告] 有 {len(filtered_devices) - len(reachable_devices)} 台设备无法连接"
+        )
         print("1. 继续执行（只处理可连接设备）")
         print("2. 尝试处理所有设备（包括不可连接设备）")
         print("3. 取消执行")
-        
+
         try:
             choice = input("\n请选择操作 [1/2/3] (默认为1): ").strip()
             if choice == "3":
@@ -473,9 +461,9 @@ def main():
             total=results["total"],
             success=results["success"],
             failed=results["failed"],
-            duration=engine.performance_monitor.get_summary().get("total_duration", 0)
+            duration=engine.performance_monitor.get_summary().get("total_duration", 0),
         )
-        
+
         # 返回状态码
         if results["failed"] == 0:
             return 0  # 全部成功
