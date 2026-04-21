@@ -1,0 +1,19 @@
+# Root-level workspace ignores
+.vscode/
+.idea/
+
+# Historical archives
+old_files/
+
+# Root-level generated artifacts
+output/
+logs/
+results/
+*.log
+
+# Common temp/cache files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+Thumbs.db
