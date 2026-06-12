@@ -9,7 +9,10 @@ Result Saver Module
 import os
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Any
+
+from .paths import resolve_corebase_path
 
 
 class ResultSaver:
@@ -22,11 +25,11 @@ class ResultSaver:
         Args:
             output_dir: 输出目录
         """
-        self.output_dir = output_dir
+        self.output_dir = resolve_corebase_path(output_dir)
         self.logger = logging.getLogger(__name__)
 
         # 确保输出目录存在
-        os.makedirs(self.output_dir, exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         self.logger.info(f"结果保存器已初始化: {self.output_dir}")
 
     def save_result(
@@ -46,7 +49,7 @@ class ResultSaver:
             # 文件名格式: 设备名(IP)(日期)(厂商).log
             date_str = datetime.now().strftime("%Y-%m-%d")
             filename = f"{device_name}({ip})({date_str})({vendor}).log"
-            filepath = os.path.join(self.output_dir, filename)
+            filepath = self.output_dir / filename
 
             # 追加模式写入
             with open(filepath, "a", encoding="utf-8") as f:
@@ -76,7 +79,7 @@ class ResultSaver:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"summary_{timestamp}.txt"
 
-            filepath = os.path.join(self.output_dir, filename)
+            filepath = self.output_dir / filename
 
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write("=" * 70 + "\n")
@@ -167,7 +170,7 @@ class ResultSaver:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"失败设备信息_{timestamp}.txt"
 
-            filepath = os.path.join(self.output_dir, filename)
+            filepath = self.output_dir / filename
 
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write("=" * 70 + "\n")
@@ -175,9 +178,7 @@ class ResultSaver:
                 f.write("Failed Devices Information\n")
                 f.write("=" * 70 + "\n\n")
 
-                f.write(
-                    f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                )
+                f.write(f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                 f.write(f"失败设备数量: {len(failed_devices)} 台\n\n")
 
                 f.write("=" * 70 + "\n")
@@ -216,7 +217,7 @@ class ResultSaver:
         Returns:
             输出目录路径
         """
-        return self.output_dir
+        return str(self.output_dir)
 
     def list_results(self, limit: int = 10) -> list:
         """
@@ -230,11 +231,10 @@ class ResultSaver:
         """
         try:
             files = []
-            for filename in os.listdir(self.output_dir):
-                if filename.endswith(".log"):
-                    filepath = os.path.join(self.output_dir, filename)
-                    mtime = os.path.getmtime(filepath)
-                    files.append((filename, mtime))
+            for filepath in self.output_dir.iterdir():
+                if filepath.suffix == ".log":
+                    mtime = filepath.stat().st_mtime
+                    files.append((filepath.name, mtime))
 
             # 按修改时间排序
             files.sort(key=lambda x: x[1], reverse=True)

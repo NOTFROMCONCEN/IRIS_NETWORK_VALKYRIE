@@ -245,6 +245,7 @@ class DeviceEngine:
             password=device_info["password"],
             port=device_info.get("port", 22),
             config=self.config,
+            device_name=device_name,
         )
 
         if not adapter:
@@ -299,7 +300,7 @@ class DeviceEngine:
                 error_code,
                 message,
             )
-            if "认证失败" in message:
+            if error_code == "AUTH_FAILED":
                 if password_error_disconnect:
                     print(
                         f"[提示] 检测到认证失败，根据配置立即断开（password_error_disconnect=True）"
@@ -510,7 +511,9 @@ class DeviceEngine:
                 except Exception as e:
                     results["failed"] += 1
                     self.logger.error(f"处理设备 {device_name} 时发生错误: {e}")
-                    print(f"[{idx}/{len(devices)}] {device_name}: [ERROR] 异常: {str(e)}")
+                    print(
+                        f"[{idx}/{len(devices)}] {device_name}: [ERROR] 异常: {str(e)}"
+                    )
 
                     results["details"].append(
                         {

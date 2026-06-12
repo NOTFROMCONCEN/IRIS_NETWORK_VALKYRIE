@@ -1,5 +1,7 @@
 # 网络设备巡检工具 - 简化优化版
 
+> 说明：本目录下的设计与迁移文档继承自早期 new_python 阶段。当前实际实现目录为 CoreBase，推荐从仓库根执行 `python main.py`；如果直接进入 CoreBase 执行，命令仍保持兼容。
+
 ## 项目简介
 
 这是对原有网络设备巡检工具（old_python）的**激进简化优化版本**。通过精简架构、合并重复代码、优化设计模式，在保留所有核心功能的同时，实现了显著的性能提升和可维护性改善。
@@ -25,7 +27,7 @@
 
 ```bash
 # 克隆或下载项目
-cd new_python
+cd CoreBase
 
 # 安装依赖（仅需4个包！）
 pip install -r requirements.txt
@@ -92,7 +94,7 @@ python main.py --help
 ## 项目结构
 
 ```
-new_python/
+CoreBase/
 ├── main.py                      # 统一程序入口
 ├── requirements.txt             # 依赖包列表（仅4个）
 ├── README.md                    # 本文档

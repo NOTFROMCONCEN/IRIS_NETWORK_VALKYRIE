@@ -1,9 +1,14 @@
 # Root-level workspace ignores
 .vscode/
 .idea/
+.venv/
+venv/
 
 # Historical archives
 old_files/
+
+# Offline bundle build output
+deploy/build/
 
 # Root-level generated artifacts
 output/

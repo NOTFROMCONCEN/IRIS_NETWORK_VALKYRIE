@@ -1,0 +1,151 @@
+version: 1
+
+groups:
+  display_l3:
+    interface_brief: display interface brief
+    ip_interface: display ip interface brief
+    arp: display arp
+    mac: display mac-address
+    route: display ip routing-table
+
+  show_l3:
+    ip_interface: show ip interface brief
+    arp: show arp
+    route: show ip route
+
+  show_switch_ports:
+    interface_status: show interface status
+    interface_description: show interface description
+
+  # ---- 设备发现命令组 (Device Discovery) ----
+  discovery_huawei:
+    lldp_neighbor: display lldp neighbor brief
+    lldp_neighbor_detail: display lldp neighbor
+    version_brief: display version
+
+  discovery_h3c:
+    lldp_neighbor: display lldp neighbor-information list
+    lldp_neighbor_detail: display lldp neighbor-information
+    version_brief: display version
+
+  discovery_cisco:
+    lldp_neighbor: show lldp neighbors
+    lldp_neighbor_detail: show lldp neighbors detail
+    cdp_neighbor: show cdp neighbors
+    cdp_neighbor_detail: show cdp neighbors detail
+    version_brief: show version | include Software|image|uptime
+
+  discovery_ruijie:
+    lldp_neighbor: show lldp neighbors
+    lldp_neighbor_detail: show lldp neighbors detail
+    version_brief: show version
+
+  discovery_maipu:
+    version_brief: show version
+
+  discovery_wst:
+    version_brief: show version
+
+vendors:
+  huawei:
+    standard_groups:
+      - display_l3
+    standard:
+      version: display version
+      device: display device
+      cpu: display cpu-usage
+      memory: display memory-usage
+      temperature: display temperature all
+      fan: display fan
+      power: display power
+      vlan: display vlan
+      bgp: display bgp peer
+      ospf: display ospf peer brief
+    logs:
+      logbuffer: display logbuffer
+      alarm: display alarm active
+
+  h3c:
+    standard_groups:
+      - display_l3
+    standard:
+      version: display version
+      device: display device
+      cpu: display cpu-usage
+      memory: display memory
+      temperature: display environment
+      fan: display fan
+      power: display power
+      vlan: display vlan all
+    logs:
+      logbuffer: display logbuffer
+
+  ruijie:
+    standard_groups:
+      - show_switch_ports
+      - show_l3
+    standard:
+      version: show version
+      cpu: show cpu
+      memory: show memory
+      processes: show processes
+      mac: show mac-address-table
+      vlan: show vlan
+    logs:
+      logging:
+        command: show loggin
+        fallback_commands:
+          - sh loggin
+          - show logging
+        allow_empty_output: false
+        min_output_length: 50
+
+  maipu:
+    standard_groups:
+      - show_l3
+    standard:
+      version: show version
+      cpu: show cpu
+      memory: show memory
+      interface: show interface
+    logs:
+      logging: show logging
+
+hostnames:
+  # 主机名命令会在厂商命令加载后再合并：同名命令覆盖，不同名命令追加。
+  # 设备名匹配不区分大小写，匹配源是 devices.xlsx 中的“设备名”字段。
+  # Core_SW_01:
+  #   vendor: huawei
+  #   standard:
+  #     version: display startup
+  #     transceiver: display transceiver diagnosis interface 10ge1/0/1
+  #   logs:
+  #     alarm: display alarm active
+
+  wst:
+    standard:
+      version: show version
+      system: show system
+      interface: show interface
+      route: show route
+      session: show session
+      policy: show policy
+    logs:
+      log: show log
+
+  cisco:
+    standard_groups:
+      - show_switch_ports
+      - show_l3
+    standard:
+      version: show version
+      running_config: show running-config
+      inventory: show inventory
+      processes: show processes cpu
+      memory: show memory statistics
+      mac: show mac address-table
+      vlan: show vlan brief
+      bgp: show ip bgp summary
+      ospf: show ip ospf neighbor
+    logs:
+      logging: show logging

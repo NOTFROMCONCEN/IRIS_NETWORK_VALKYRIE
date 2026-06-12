@@ -1,4 +1,6 @@
-# new_python 架构设计文档
+# CoreBase 架构设计文档
+
+> 说明：本文档形成于 new_python 重构阶段；当前落地目录名为 CoreBase。文中若出现 new_python，可等价理解为当前 CoreBase 实现。
 
 ## 概述
 
@@ -14,7 +16,7 @@
 ## 目录结构
 
 ```
-new_python/
+CoreBase/
 ├── main.py                      # 统一程序入口
 ├── requirements.txt             # 依赖包列表
 ├── README.md                    # 项目说明文档

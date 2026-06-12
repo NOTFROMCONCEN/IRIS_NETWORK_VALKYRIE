@@ -10,6 +10,7 @@ __description__ = "简化优化版网络设备巡检工具"
 from .utils import load_config, load_devices, load_passwords, setup_logging
 from .engine import DeviceEngine
 from .saver import ResultSaver
+from .crypto import encrypt_password, decrypt_password, is_encrypted, get_crypto
 
 __all__ = [
     "load_config",
@@ -18,4 +19,8 @@ __all__ = [
     "setup_logging",
     "DeviceEngine",
     "ResultSaver",
+    "encrypt_password",
+    "decrypt_password",
+    "is_encrypted",
+    "get_crypto",
 ]

@@ -1,5 +1,7 @@
 # 网络设备巡检工具 - 优化总结
 
+> 说明：本文成稿于目录名仍为 new_python 的阶段。当前代码已迁移到 CoreBase，文中的 `new_python/...` 路径可对应理解为 `CoreBase/...`。
+
 ## 优化概述
 
 本次优化针对**内网笔记本 + Windows 10 + 准入控制**的部署环境，对项目进行了全面优化，提升了稳定性、性能和可维护性。
@@ -186,17 +188,17 @@ system:
 
 ## 修改文件清单
 
-| 文件 | 修改内容 |
-|------|---------|
-| [`config.yaml`](new_python/config/config.yaml) | 修复格式，新增配置项 |
-| [`core/engine.py`](new_python/core/engine.py) | 并发数优化，集成性能监控 |
-| [`core/adapters.py`](new_python/core/adapters.py) | 支持配置参数，超时优化 |
-| [`core/utils.py`](new_python/core/utils.py) | 日志轮转，磁盘检查，路径优化 |
-| [`main.py`](new_python/main.py) | 磁盘空间检查 |
-| [`ui/app.py`](new_python/ui/app.py) | 清理重复导入，优化实时输出 |
-| [`ui/device_manager.py`](new_python/ui/device_manager.py) | 备份清理机制 |
-| [`requirements.txt`](new_python/requirements.txt) | 添加psutil依赖 |
-| [`main.py`](new_python/main.py) | 集成配置验证、设备分组、通知功能 |
+| 文件                                                      | 修改内容                         |
+| --------------------------------------------------------- | -------------------------------- |
+| [`config.yaml`](new_python/config/config.yaml)            | 修复格式，新增配置项             |
+| [`core/engine.py`](new_python/core/engine.py)             | 并发数优化，集成性能监控         |
+| [`core/adapters.py`](new_python/core/adapters.py)         | 支持配置参数，超时优化           |
+| [`core/utils.py`](new_python/core/utils.py)               | 日志轮转，磁盘检查，路径优化     |
+| [`main.py`](new_python/main.py)                           | 磁盘空间检查                     |
+| [`ui/app.py`](new_python/ui/app.py)                       | 清理重复导入，优化实时输出       |
+| [`ui/device_manager.py`](new_python/ui/device_manager.py) | 备份清理机制                     |
+| [`requirements.txt`](new_python/requirements.txt)         | 添加psutil依赖                   |
+| [`main.py`](new_python/main.py)                           | 集成配置验证、设备分组、通知功能 |
 
 ---
 
@@ -326,17 +328,17 @@ pip install -r requirements.txt
 
 ## 优化效果预期
 
-| 指标 | 优化前 | 优化后 | 改进 |
-|------|--------|--------|------|
-| 并发数（预检查） | 50 | 20 | ↓60% |
-| 并发数（批量） | 10 | 5 | ↓50% |
-| 连接超时 | 30秒 | 60秒 | ↑100% |
-| 命令超时 | 60秒 | 120秒 | ↑100% |
-| 重试次数 | 0 | 3 | ✓ |
-| 日志管理 | 无限制 | 10MB/7个 | ✓ |
-| 备份清理 | 无 | 10个/7天 | ✓ |
-| 磁盘检查 | 无 | 100MB | ✓ |
-| 性能监控 | 无 | 完整 | ✓ |
+| 指标             | 优化前 | 优化后   | 改进  |
+| ---------------- | ------ | -------- | ----- |
+| 并发数（预检查） | 50     | 20       | ↓60%  |
+| 并发数（批量）   | 10     | 5        | ↓50%  |
+| 连接超时         | 30秒   | 60秒     | ↑100% |
+| 命令超时         | 60秒   | 120秒    | ↑100% |
+| 重试次数         | 0      | 3        | ✓     |
+| 日志管理         | 无限制 | 10MB/7个 | ✓     |
+| 备份清理         | 无     | 10个/7天 | ✓     |
+| 磁盘检查         | 无     | 100MB    | ✓     |
+| 性能监控         | 无     | 完整     | ✓     |
 
 ---
 

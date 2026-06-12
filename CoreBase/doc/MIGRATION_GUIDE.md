@@ -1,13 +1,15 @@
-# new_python 迁移指南
+# CoreBase 迁移指南
+
+> 说明：本指南描述的是 old_python 向当前 CoreBase 实现的迁移过程。历史文案中的 new_python 即当前 CoreBase；推荐从仓库根执行 `python main.py`，如需进入项目目录请使用 `cd CoreBase`。
 
 ## 概述
 
-本指南详细说明如何从 old_python 迁移到 new_python，确保平滑过渡，最小化业务中断。
+本指南详细说明如何从 old_python 迁移到当前 CoreBase 实现，确保平滑过渡，最小化业务中断。
 
 ## 快速迁移检查清单
 
 - [ ] 备份 old_python 配置文件
-- [ ] 安装 new_python 依赖
+- [ ] 安装 CoreBase 依赖
 - [ ] 转换配置文件格式
 - [ ] 复制设备信息文件
 - [ ] 测试单台设备
@@ -49,7 +51,7 @@ venv_new_python\Scripts\activate  # Windows
 #### 1.3 安装依赖
 
 ```bash
-cd new_python
+cd CoreBase
 pip install -r requirements.txt
 ```
 

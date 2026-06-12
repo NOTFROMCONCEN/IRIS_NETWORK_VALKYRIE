@@ -4,9 +4,9 @@
 # ============================================================
 
 # 版本信息
-version: "3.0.0"              # 程序版本号
-description: "简化优化版本"    # 版本描述
-release_date: '2025-10-15'     # 发布日期
+version: "3.1.0"              # 程序版本号
+description: "新增跳板机支持"  # 版本描述
+release_date: '2026-05-06'     # 发布日期
 
 # ============================================================
 # 系统配置 (System Configuration)
@@ -54,6 +54,34 @@ network:
   
   # 命令执行超时时间（秒）
   command_timeout: 120
+  
+  # 跳板机配置 (Jump Host Configuration)
+  # 注意：跳板机配置也可以在设备清单中单独配置
+  jump_host:
+    # 跳板机地址（可选，如果配置了则所有设备默认通过此跳板机连接）
+    address: null
+    
+    # 跳板机端口
+    port: 22
+    
+    # 跳板机用户名（建议在设备清单中配置，避免明文存储）
+    username: ""
+    
+    # 跳板机密码（建议在设备清单中配置，避免明文存储）
+    password: ""
+    
+    # 跳板机连接超时时间（秒）
+    connect_timeout: 30
+    
+    # 跳板机命令超时时间（秒）
+    command_timeout: 60
+
+# ============================================================
+# 命令配置 (Command Configuration)
+# ============================================================
+commands:
+  # 厂商巡检命令定义文件
+  catalog_file: config/commands.yaml
 
 # ============================================================
 # 输出配置 (Output Configuration)
@@ -91,3 +119,33 @@ features:
   
   # 进度条显示（在终端显示巡检进度）
   progress_bar: true
+
+# ============================================================
+# 设备发现配置 (Device Discovery Configuration)
+# ============================================================
+discovery:
+  # 是否启用设备发现功能
+  enabled: true
+  
+  # LLDP/CDP邻居发现配置
+  lldp:
+    max_depth: 3               # 递归发现最大深度
+    max_devices: 200           # 安全限制: 最大发现设备数
+    timeout_per_device: 30     # 单设备发现超时 (秒)
+    use_cdp: true              # 是否同时尝试CDP (Cisco设备)
+    max_workers: 5             # LLDP发现并发数 (不宜过高)
+  
+  # 子网扫描配置
+  subnet_scan:
+    ping_timeout: 1            # ICMP Ping 超时 (秒)
+    ping_count: 1              # Ping 次数
+    ssh_timeout: 3             # SSH端口探测超时 (秒)
+    ssh_ports: [22]            # 探测的SSH端口列表
+    max_workers: 50            # 并发扫描线程数
+    try_ssh_login: true        # 是否尝试SSH登录识别厂商
+  
+  # 厂商识别配置
+  identification:
+    login_timeout: 10          # SSH登录超时 (秒)
+    command_timeout: 10        # 命令执行超时 (秒)
+    try_all_credentials: true  # 凭证不匹配时尝试所有已配置凭证

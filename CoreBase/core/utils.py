@@ -11,12 +11,19 @@ import sys
 import logging
 import ipaddress
 import yaml
-import pandas as pd
 import gzip
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
+
+from .device_inventory import (
+    inventory_to_cli_device,
+    read_device_inventory,
+    validate_cli_device,
+)
+from .paths import COREBASE_ROOT, resolve_corebase_path
+from .crypto import is_encrypted, decrypt_password
 
 
 def load_config(config_file: str = "config/config.yaml") -> Dict[str, Any]:
@@ -30,15 +37,15 @@ def load_config(config_file: str = "config/config.yaml") -> Dict[str, Any]:
         配置字典
     """
     try:
-        config_path = Path(config_file)
+        config_path = resolve_corebase_path(config_file)
         if not config_path.exists():
-            print(f"[警告] 配置文件不存在: {config_file}，使用默认配置")
+            print(f"[警告] 配置文件不存在: {config_path}，使用默认配置")
             return _get_default_config()
 
         with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
-        print(f"[成功] 配置文件加载成功: {config_file}")
+        print(f"[成功] 配置文件加载成功: {config_path}")
         return config
 
     except Exception as e:
@@ -53,6 +60,7 @@ def _get_default_config() -> Dict[str, Any]:
         "version": "3.0.0",
         "system": {"timeout": 60, "retries": 3, "log_level": "INFO"},
         "network": {"ssh_port": 22, "connect_timeout": 30, "command_timeout": 60},
+        "commands": {"catalog_file": "config/commands.yaml"},
         "output": {"results_dir": "output/results", "logs_dir": "output/logs"},
         "features": {"log_mode": True, "auto_retry": True, "progress_bar": True},
     }
@@ -69,57 +77,13 @@ def load_devices(excel_file: str) -> List[Dict[str, Any]]:
         设备信息列表
     """
     try:
-        excel_path = Path(excel_file)
-        if not excel_path.exists():
-            print(f"[错误] 设备配置文件不存在: {excel_file}")
-            return []
+        _, inventory_devices, warnings = read_device_inventory(excel_file)
+        for warning in warnings:
+            print(f"[警告] {warning}")
 
-        df = pd.read_excel(excel_path)
         devices = []
-
-        # 检查必需的列（新格式）
-        required_cols = ["设备名", "IP地址", "生产厂商"]
-        missing_cols = [col for col in required_cols if col not in df.columns]
-
-        if missing_cols:
-            print(f"[错误] Excel缺少必需列: {missing_cols}")
-            print(f"[提示] 当前列: {list(df.columns)}")
-            return []
-
-        for _, row in df.iterrows():
-            if (
-                pd.isna(row.get("设备名"))
-                or pd.isna(row.get("IP地址"))
-                or pd.isna(row.get("生产厂商"))
-            ):
-                print(f"[警告] 跳过缺少必需信息的行: {row.to_dict()}")
-                continue
-
-            # 厂商名称标准化：转换为小写（支持CISCO、H3C、HUAWEI、RUIJIE等大写格式）
-            vendor = str(row["生产厂商"]).strip().lower()
-
-            # 获取端口号，如果不存在则使用默认22
-            port = 22  # 默认SSH端口
-            if "端口" in df.columns and pd.notna(row["端口"]):
-                try:
-                    port = int(row["端口"])
-                except (ValueError, TypeError):
-                    print(
-                        f"[警告] 设备 {row.get('设备名', 'unknown')} 端口格式无效，使用默认端口22"
-                    )
-                    port = 22
-
-            device = {
-                "name": str(row["设备名"]).strip(),
-                "ip": str(row["IP地址"]).strip(),
-                "vendor": vendor,
-                "model": str(row["设备名"]).strip(),  # 使用设备名作为型号
-                "port": port,  # 添加端口字段
-                "username": "",  # 将从密码配置中获取
-                "password": "",  # 将从密码配置中获取
-            }
-
-            # 基本验证
+        for inventory_device in inventory_devices:
+            device = inventory_to_cli_device(inventory_device)
             if device["ip"] and device["vendor"]:
                 devices.append(device)
             else:
@@ -127,6 +91,15 @@ def load_devices(excel_file: str) -> List[Dict[str, Any]]:
 
         print(f"[成功] 成功加载 {len(devices)} 台设备")
         return devices
+
+    except FileNotFoundError:
+        excel_path = resolve_corebase_path(excel_file)
+        print(f"[错误] 设备配置文件不存在: {excel_path}")
+        return []
+
+    except ValueError as e:
+        print(f"[错误] {e}")
+        return []
 
     except Exception as e:
         print(f"[错误] 读取设备信息失败: {e}")
@@ -148,9 +121,9 @@ def load_passwords(
     passwords = {}
 
     try:
-        config_path = Path(config_file)
+        config_path = resolve_corebase_path(config_file)
         if not config_path.exists():
-            print(f"[警告] 密码配置文件不存在: {config_file}")
+            print(f"[警告] 密码配置文件不存在: {config_path}")
             return {"default": {"username": "admin", "password": "admin"}}
 
         with open(config_path, "r", encoding="utf-8") as f:
@@ -179,6 +152,19 @@ def load_passwords(
                             continue
 
                         username, password = cred_parts
+                        username = username.strip()
+                        password = password.strip()
+
+                        # 检查是否为加密密码，如果是则解密
+                        if is_encrypted(password):
+                            decrypted = decrypt_password(password)
+                            if decrypted is None:
+                                print(
+                                    f"[警告] 第 {line_num} 行密码解密失败，已忽略: {vendor}"
+                                )
+                                continue
+                            password = decrypted
+                            print(f"[提示] 已解密 {vendor} 的加密密码")
 
                         if vendor in passwords:
                             print(
@@ -186,8 +172,8 @@ def load_passwords(
                             )
 
                         passwords[vendor] = {
-                            "username": username.strip(),
-                            "password": password.strip(),
+                            "username": username,
+                            "password": password,
                         }
                     else:
                         print(
@@ -223,7 +209,7 @@ def setup_logging(config: Dict[str, Any]) -> str:
         log_rotation = config.get("output", {}).get("log_rotation", {})
 
         # 确保日志目录存在
-        logs_path = Path(logs_dir)
+        logs_path = resolve_corebase_path(logs_dir)
         logs_path.mkdir(parents=True, exist_ok=True)
 
         # 生成日志文件名
@@ -269,7 +255,7 @@ def setup_logging(config: Dict[str, Any]) -> str:
 
         # 压缩旧日志
         if rotation_enabled and compress_old_logs:
-            _compress_old_logs(logs_dir, backup_count)
+            _compress_old_logs(str(logs_path), backup_count)
 
         print(f"[日志] 日志文件: {log_file}")
         print(f"[日志] 日志级别: {log_level}")
@@ -351,46 +337,9 @@ def validate_device(device: Dict[str, Any]) -> Tuple[bool, str]:
     Returns:
         (是否有效, 错误消息)
     """
-    required_fields = ["name", "ip", "vendor", "username", "password"]
-
-    for field in required_fields:
-        if field not in device or not device[field]:
-            return False, f"缺少必要字段或字段为空: {field}"
-
-    # 标准化字段，避免后续流程处理大小写/空白差异
-    device["name"] = str(device["name"]).strip()
-    device["vendor"] = str(device["vendor"]).strip().lower()
-    device["username"] = str(device["username"]).strip()
-    device["password"] = str(device["password"]).strip()
-
-    ip = str(device["ip"]).strip()
-    if not ip:
-        return False, "IP地址为空"
-
-    try:
-        ipaddress.ip_address(ip)
-    except ValueError:
-        return False, f"无效的IP地址格式: {ip}"
-    device["ip"] = ip
-
-    # 端口校验：缺省值回填为22
-    port = device.get("port", 22)
-    try:
-        port = int(port)
-    except (TypeError, ValueError):
-        return False, f"无效的端口格式: {port}"
-
-    if port < 1 or port > 65535:
-        return False, f"端口超出范围: {port}"
-    device["port"] = port
-
     from .adapters import AdapterFactory
 
-    # 验证厂商
-    if not AdapterFactory.is_vendor_supported(device["vendor"]):
-        return False, f"不支持的厂商: {device['vendor']}"
-
-    return True, ""
+    return validate_cli_device(device, AdapterFactory.get_supported_vendors())
 
 
 def update_devices_with_passwords(
@@ -493,7 +442,7 @@ def check_disk_space(required_mb: int = 100) -> Tuple[bool, int, str]:
         (是否足够, 可用空间MB, 错误信息)
     """
     try:
-        disk = shutil.disk_usage(".")
+        disk = shutil.disk_usage(COREBASE_ROOT)
         free_mb = disk.free / (1024 * 1024)
 
         if free_mb < required_mb:
@@ -538,8 +487,11 @@ def create_output_dirs(config: Dict[str, Any]):
     results_dir = config.get("output", {}).get("results_dir", "output/results")
     logs_dir = config.get("output", {}).get("logs_dir", "output/logs")
 
-    Path(results_dir).mkdir(parents=True, exist_ok=True)
-    Path(logs_dir).mkdir(parents=True, exist_ok=True)
+    results_path = resolve_corebase_path(results_dir)
+    logs_path = resolve_corebase_path(logs_dir)
 
-    print(f"[输出] 结果目录: {results_dir}")
-    print(f"[输出] 日志目录: {logs_dir}")
+    results_path.mkdir(parents=True, exist_ok=True)
+    logs_path.mkdir(parents=True, exist_ok=True)
+
+    print(f"[输出] 结果目录: {results_path}")
+    print(f"[输出] 日志目录: {logs_path}")

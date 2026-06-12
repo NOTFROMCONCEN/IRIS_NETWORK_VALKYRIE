@@ -1,0 +1,53 @@
+# ============================================================
+# Streamlit 配置文件示例
+# Streamlit Configuration File Example
+# ============================================================
+#
+# 使用说明:
+#   1. 复制此文件为 config.toml: copy config_example.toml config.toml
+#   2. 修改 password 为强密码
+#   3. 根据需要调整其他配置
+#
+# 安全提示:
+#   - .streamlit/ 目录已添加到 .gitignore，不会提交到 Git
+#   - 请勿将包含真实密码的配置文件提交到版本库
+#   - 生产环境建议使用反向代理添加额外认证
+#
+# ============================================================
+
+[server]
+# 启用密码保护
+enablePasswordProtection = true
+
+# 密码（请修改为强密码）
+password = "CHANGE_THIS_TO_A_STRONG_PASSWORD"
+
+# 服务器端口
+port = 8501
+
+# 允许来自所有 IP 的访问
+address = "0.0.0.0"
+
+# 启用 XSRF 保护
+enableXsrfProtection = true
+
+[browser]
+# 自动打开浏览器
+autoOpenBrowser = false
+
+[theme]
+# 主色调
+primaryColor = "#FF4B4B"
+
+# 背景色
+backgroundColor = "#FFFFFF"
+
+# 二级背景色
+secondaryBackgroundColor = "#F0F2F6"
+
+# 文本颜色
+textColor = "#262730"
+
+[logger]
+# 日志级别
+level = "info"
